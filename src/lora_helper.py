@@ -45,12 +45,16 @@ def update_model_with_lora(checkpoint, lora_weights, transformer, cond_size):
             if name.startswith("transformer_blocks") and layer_index in double_blocks_idx:
                 
                 lora_state_dicts = {}
-                for key, value in checkpoint.items():
-                    # Match based on the layer index in the key (assuming the key contains layer index)
-                    if re.search(r'\.(\d+)\.', key):
-                        checkpoint_layer_index = int(re.search(r'\.(\d+)\.', key).group(1))
-                        if checkpoint_layer_index == layer_index and key.startswith("transformer_blocks"):
-                            lora_state_dicts[key] = value
+
+                if checkpoint is not None:
+                    for key, value in checkpoint.items():
+                        # Match based on the layer index in the key (assuming the key contains layer index)
+                        if re.search(r'\.(\d+)\.', key):
+                            layer_idx = int(re.search(r'\.(\d+)\.', key).group(1))
+                            if layer_idx not in lora_state_dicts:
+                                lora_state_dicts[layer_idx] = {}
+                            lora_state_dicts[layer_idx][key] = value
+
                 
                 lora_attn_procs[name] = MultiDoubleStreamBlockLoraProcessor(
                     dim=3072, ranks=ranks, network_alphas=ranks, lora_weights=lora_weights, device=device, dtype=torch.bfloat16, cond_width=cond_size, cond_height=cond_size, n_loras=number
