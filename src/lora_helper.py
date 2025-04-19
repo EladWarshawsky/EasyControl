@@ -14,9 +14,12 @@ def load_safetensors(path):
     return tensors
 
 def get_lora_rank(checkpoint):
+    if checkpoint is None:
+        return 8  # or 4, 16, whatever rank you want as default
     for k in checkpoint.keys():
         if k.endswith(".down.weight"):
             return checkpoint[k].shape[0]
+    raise ValueError("Could not infer LoRA rank from checkpoint.")
 
 def load_checkpoint(local_path):
     if local_path is not None:
