@@ -3,7 +3,7 @@ from safetensors import safe_open
 import re
 import torch
 from .layers_cache import MultiDoubleStreamBlockLoraProcessor, MultiSingleStreamBlockLoraProcessor
-
+from src.models.lora_blocks import LoRALinearLayer, MultiLoraBlock  # Keep existing EasyControl logic
 device = "cuda"
 
 def load_safetensors(path):
@@ -30,6 +30,37 @@ def load_checkpoint(local_path):
             print(f"Loading checkpoint from {local_path}")
             checkpoint = torch.load(local_path, map_location='cpu')
     return checkpoint
+
+def update_model_with_lora_sanasprint(transformer, rank=8, lora_weights=[0.0], cond_size=512):
+    """
+    Inject LoRA adapters into SANA-Sprint Attention modules' QKV projections.
+    """
+    print("🔧 Injecting EasyControl LoRA into SANA-Sprint transformer...")
+
+    n_loras = len(lora_weights)
+
+    for name, module in transformer.named_modules():
+        if re.match(r"transformer_blocks\.\d+\.attn[12]$", name):
+            print(f"🔍 Found attention block: {name}")
+            
+            for proj_name in ["to_q", "to_k", "to_v"]:
+                full_proj_name = f"{name}.{proj_name}"
+                proj_module = dict(module.named_children())[proj_name]
+                
+                # Wrap the Linear layer with EasyControl-style LoRALinearLayer
+                wrapped = LoRALinearLayer(
+                    proj_module,
+                    rank=rank,
+                    lora_alpha=rank,
+                    n_loras=n_loras,
+                    cond_dim=cond_size
+                )
+
+                # Replace in-place
+                setattr(module, proj_name, wrapped)
+                print(f"Injected LoRA into {full_proj_name}")
+
+    print("Finished LoRA injection.\n")
 
 def update_model_with_lora(checkpoint, lora_weights, transformer, cond_size):
         number = len(lora_weights)
