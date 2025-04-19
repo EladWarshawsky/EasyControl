@@ -3,7 +3,7 @@ from safetensors import safe_open
 import re
 import torch
 from .layers_cache import MultiDoubleStreamBlockLoraProcessor, MultiSingleStreamBlockLoraProcessor
-from src.models.lora_blocks import LoRALinearLayer, MultiLoraBlock  # Keep existing EasyControl logic
+# from src.models.lora_blocks import LoRALinearLayer, MultiLoraBlock  # Keep existing EasyControl logic
 device = "cuda"
 
 def load_safetensors(path):
@@ -30,6 +30,30 @@ def load_checkpoint(local_path):
             print(f"Loading checkpoint from {local_path}")
             checkpoint = torch.load(local_path, map_location='cpu')
     return checkpoint
+
+import torch
+import torch.nn as nn
+import math
+
+class LoRALinearLayer(nn.Module):
+    def __init__(self, base_layer, rank, lora_alpha, n_loras=1, cond_dim=512):
+        super().__init__()
+        self.base_layer = base_layer
+        self.rank = rank
+        self.n_loras = n_loras
+        self.cond_dim = cond_dim
+
+        self.down = nn.Linear(cond_dim, rank, bias=False)
+        self.up = nn.Linear(rank, base_layer.out_features, bias=False)
+        self.scale = lora_alpha / rank
+
+    def forward(self, x, cond=None):
+        base = self.base_layer(x)
+        if cond is not None:
+            # LoRA modification based on condition
+            lora = self.up(self.down(cond))
+            base = base + self.scale * lora
+        return base
 
 def update_model_with_lora_sanasprint(transformer, rank=8, lora_weights=[0.0], cond_size=512):
     """
