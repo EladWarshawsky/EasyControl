@@ -62,15 +62,26 @@ def update_model_with_lora(checkpoint, lora_weights, transformer, cond_size):
                 
                 # Load the weights from the checkpoint dictionary into the corresponding layers
                 for n in range(number):
-                    lora_attn_procs[name].q_loras[n].down.weight.data = lora_state_dicts.get(f'{name}.q_loras.{n}.down.weight', None)
-                    lora_attn_procs[name].q_loras[n].up.weight.data = lora_state_dicts.get(f'{name}.q_loras.{n}.up.weight', None)
-                    lora_attn_procs[name].k_loras[n].down.weight.data = lora_state_dicts.get(f'{name}.k_loras.{n}.down.weight', None)
-                    lora_attn_procs[name].k_loras[n].up.weight.data = lora_state_dicts.get(f'{name}.k_loras.{n}.up.weight', None)
-                    lora_attn_procs[name].v_loras[n].down.weight.data = lora_state_dicts.get(f'{name}.v_loras.{n}.down.weight', None)
-                    lora_attn_procs[name].v_loras[n].up.weight.data = lora_state_dicts.get(f'{name}.v_loras.{n}.up.weight', None)
-                    lora_attn_procs[name].proj_loras[n].down.weight.data = lora_state_dicts.get(f'{name}.proj_loras.{n}.down.weight', None)
-                    lora_attn_procs[name].proj_loras[n].up.weight.data = lora_state_dicts.get(f'{name}.proj_loras.{n}.up.weight', None)
-                    lora_attn_procs[name].to(device)
+                    q_down = lora_state_dicts.get(f'{name}.q_loras.{n}.down.weight', None)
+                    q_up   = lora_state_dicts.get(f'{name}.q_loras.{n}.up.weight', None)
+                    k_down = lora_state_dicts.get(f'{name}.k_loras.{n}.down.weight', None)
+                    k_up   = lora_state_dicts.get(f'{name}.k_loras.{n}.up.weight', None)
+                    v_down = lora_state_dicts.get(f'{name}.v_loras.{n}.down.weight', None)
+                    v_up   = lora_state_dicts.get(f'{name}.v_loras.{n}.up.weight', None)
+                
+                    if q_down is not None:
+                        lora_attn_procs[name].q_loras[n].down.weight.data = q_down
+                    if q_up is not None:
+                        lora_attn_procs[name].q_loras[n].up.weight.data   = q_up
+                    if k_down is not None:
+                        lora_attn_procs[name].k_loras[n].down.weight.data = k_down
+                    if k_up is not None:
+                        lora_attn_procs[name].k_loras[n].up.weight.data   = k_up
+                    if v_down is not None:
+                        lora_attn_procs[name].v_loras[n].down.weight.data = v_down
+                    if v_up is not None:
+                        lora_attn_procs[name].v_loras[n].up.weight.data   = v_up
+
                 
             elif name.startswith("single_transformer_blocks") and layer_index in single_blocks_idx:
                 
