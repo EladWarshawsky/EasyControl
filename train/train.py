@@ -43,7 +43,11 @@ from src.prompt_helper import *
 from src.lora_helper import *
 from src.pipeline import FluxPipeline, resize_position_encoding, prepare_latent_subject_ids
 from src.layers import MultiDoubleStreamBlockLoraProcessor, MultiSingleStreamBlockLoraProcessor
-from src.transformer_flux import FluxTransformer2DModel
+# from src.transformer_flux import FluxTransformer2DModel
+
+from diffusers import SanaSprintPipeline
+from diffusers.models import SanaTransformer2DModel
+
 from src.jsonl_datasets import make_train_dataset, collate_fn
 
 if is_wandb_available():
@@ -561,7 +565,7 @@ def main(args):
         revision=args.revision,
         variant=args.variant,
     )
-    transformer = FluxTransformer2DModel.from_pretrained(
+    transformer = SanaTransformer2DModel.from_pretrained(
         args.pretrained_model_name_or_path, subfolder="transformer", revision=args.revision, variant=args.variant
     )
 
@@ -1009,7 +1013,7 @@ def main(args):
             if accelerator.is_main_process:
                 if args.validation_prompt is not None and global_step % args.validation_steps == 0:
                     # create pipeline
-                    pipeline = FluxPipeline.from_pretrained(
+                    pipeline = SanaSprintPipeline.from_pretrained(
                         args.pretrained_model_name_or_path,
                         vae=vae,
                         text_encoder=accelerator.unwrap_model(text_encoder_one),
